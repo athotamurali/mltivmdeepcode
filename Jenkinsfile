@@ -2,17 +2,39 @@ pipeline {
     agent any
 
     environment {
-        // Use Jenkins credentials to set GitHub credentials
-        GITHUB_CREDENTIALS = credentials('github-credentials') // Jenkins credential ID for GitHub credentials
+        ARM_CLIENT_ID       = credentials('azure-client-id')
+        ARM_CLIENT_SECRET   = credentials('azure-client-secret')
+        ARM_SUBSCRIPTION_ID = credentials('azure-subscription-id')
+        ARM_TENANT_ID       = credentials('azure-tenant-id')
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Checkout the repository using GitHub credentials
-                script {
-                    def repoUrl = "https://${GITHUB_CREDENTIALS_USR}:${GITHUB_CREDENTIALS_PSW}@github.com/athotamurali/mltivmdeepcode.git"
-                    git branch: 'main', url: repoUrl
+                git branch: 'main', url: 'https://github.com/athotamurali/mltivmdeepcode.git'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                dir('terraform') { // Change to the directory containing Terraform files
+                    sh 'terraform init'
+                }
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform plan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                dir('terraform') {
+                    sh 'terraform apply -auto-approve'
                 }
             }
         }
@@ -20,21 +42,18 @@ pipeline {
         stage('Build') {
             steps {
                 echo 'Building the project...'
-                // Add build steps here
             }
         }
 
         stage('Test') {
             steps {
                 echo 'Running tests...'
-                // Add test steps here
             }
         }
 
         stage('Deploy') {
             steps {
                 echo 'Deploying the project...'
-                // Add deployment steps here
             }
         }
     }
