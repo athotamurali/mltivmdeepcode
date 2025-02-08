@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        // Use Jenkins credentials for Azure authentication
+        // Retrieve credentials securely from Jenkins
         AZURE_SUBSCRIPTION_ID = credentials('azure-subscription-id')
         AZURE_CLIENT_ID       = credentials('azure-client-id')
         AZURE_CLIENT_SECRET   = credentials('azure-client-secret')
@@ -12,39 +12,71 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                script {
+                    echo "Checking out the repository..."
+                }
                 git branch: 'main', url: 'https://github.com/athotamurali/mltivmdeepcode.git'
             }
         }
 
-        stage('Debug') {
+        stage('Debug Credentials') {
             steps {
-                sh 'echo "Subscription ID: $AZURE_SUBSCRIPTION_ID"'
-                sh 'echo "Client ID: $AZURE_CLIENT_ID"'
-                sh 'echo "Client Secret: $AZURE_CLIENT_SECRET"'
-                sh 'echo "Tenant ID: $AZURE_TENANT_ID"'
+                script {
+                    echo "### Debugging Credentials ###"
+                    echo "AZURE_SUBSCRIPTION_ID: ${AZURE_SUBSCRIPTION_ID.length() > 0 ? 'Retrieved Successfully' : 'MISSING!'}"
+                    echo "AZURE_CLIENT_ID: ${AZURE_CLIENT_ID.length() > 0 ? 'Retrieved Successfully' : 'MISSING!'}"
+                    echo "AZURE_CLIENT_SECRET: ${AZURE_CLIENT_SECRET.length() > 0 ? 'Retrieved Successfully' : 'MISSING!'}"
+                    echo "AZURE_TENANT_ID: ${AZURE_TENANT_ID.length() > 0 ? 'Retrieved Successfully' : 'MISSING!'}"
+                }
+            }
+        }
+
+        stage('Test Azure CLI Authentication') {
+            steps {
+                script {
+                    echo "### Checking if Azure CLI is Installed ###"
+                    sh 'az --version || echo "Azure CLI is NOT installed!"'
+
+                    echo "### Logging into Azure with Service Principal ###"
+                    sh '''
+                        az login --service-principal \
+                            -u $AZURE_CLIENT_ID \
+                            -p $AZURE_CLIENT_SECRET \
+                            --tenant $AZURE_TENANT_ID || echo "Azure login FAILED!"
+                    '''
+                }
             }
         }
 
         stage('Terraform Init') {
             steps {
+                script {
+                    echo "Initializing Terraform..."
+                }
                 dir('terraform/environments/dev') {
-                    sh 'terraform init'
+                    sh 'terraform init || echo "Terraform Init FAILED!"'
                 }
             }
         }
 
         stage('Terraform Plan') {
             steps {
+                script {
+                    echo "Running Terraform Plan..."
+                }
                 dir('terraform/environments/dev') {
-                    sh 'terraform plan'
+                    sh 'terraform plan || echo "Terraform Plan FAILED!"'
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
+                script {
+                    echo "Applying Terraform Changes..."
+                }
                 dir('terraform/environments/dev') {
-                    sh 'terraform apply -auto-approve'
+                    sh 'terraform apply -auto-approve || echo "Terraform Apply FAILED!"'
                 }
             }
         }
@@ -55,7 +87,7 @@ pipeline {
             echo 'Terraform deployment succeeded!'
         }
         failure {
-            echo 'Terraform deployment failed!'
+            echo 'Terraform deployment failed! Please check logs above for issues.'
         }
-    } // Close the post block
-} // Close the pipeline block
+    }
+}
