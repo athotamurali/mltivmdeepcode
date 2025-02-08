@@ -1,45 +1,16 @@
-resource "azurerm_resource_group" "rg" {
-  name     = "rg-${var.environment}-vm"
-  location = var.location
-}
-
-resource "azurerm_virtual_network" "vnet" {
-  name                = "vnet-${var.environment}"
-  address_space       = ["10.0.0.0/16"]
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-resource "azurerm_subnet" "subnet" {
-  name                 = "subnet-${var.environment}"
-  resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.vnet.name
-  address_prefixes     = ["10.0.1.0/24"]
-}
-
-resource "azurerm_network_interface" "nic" {
-  count               = var.vm_count
-  name                = "nic-${var.environment}-${count.index}"
-  location            = azurerm_resource_group.rg.location
-  resource_group_name = azurerm_resource_group.rg.name
-
-  ip_configuration {
-    name                          = "internal"
-    subnet_id                     = azurerm_subnet.subnet.id
-    private_ip_address_allocation = "Dynamic"
-  }
-}
-
+# modules/vm/main.tf
 resource "azurerm_linux_virtual_machine" "vm" {
-  count               = var.vm_count
-  name                = "vm-${var.environment}-${count.index}"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
+  name                = var.vm_name
+  resource_group_name = var.resource_group_name
+  location            = var.location
   size                = var.vm_size
-  admin_username      = "adminuser"
-  network_interface_ids = [
-    azurerm_network_interface.nic[count.index].id,
-  ]
+  admin_username      = var.admin_username
+  network_interface_ids = [var.network_interface_id]
+
+  admin_ssh_key {
+    username   = var.admin_username
+    public_key = file(var.public_key_path)
+  }
 
   os_disk {
     caching              = "ReadWrite"
@@ -52,9 +23,15 @@ resource "azurerm_linux_virtual_machine" "vm" {
     sku       = "18.04-LTS"
     version   = "latest"
   }
+}
 
-  admin_ssh_key {
-    username   = "adminuser"
-    public_key = file("~/.ssh/id_rsa.pub")
-  }
+output "vm_public_ip" {
+  value = azurerm_public_ip.vm_public_ip.ip_address
+}
+
+resource "azurerm_public_ip" "vm_public_ip" {
+  name                = "${var.vm_name}-public-ip"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  allocation_method   = "Dynamic"
 }
