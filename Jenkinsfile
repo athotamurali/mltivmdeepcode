@@ -15,7 +15,14 @@ pipeline {
                 script {
                     echo "Checking out the repository..."
                 }
-                git branch: 'main', url: 'https://github.com/athotamurali/mltivmdeepcode.git'
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: '*/main']],
+                    userRemoteConfigs: [[
+                        url: 'https://github.com/athotamurali/mltivmdeepcode.git',
+                        credentialsId: 'github-credentials' // Use stored GitHub credentials
+                    ]]
+                ])
             }
         }
 
