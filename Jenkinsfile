@@ -7,7 +7,14 @@ pipeline {
         AZURE_CLIENT_SECRET   = credentials('azure-client-secret')
         AZURE_TENANT_ID       = credentials('azure-tenant-id')
     }
-
+stage('Debug') {
+    steps {
+        sh 'echo "Subscription ID: $AZURE_SUBSCRIPTION_ID"'
+        sh 'echo "Client ID: $AZURE_CLIENT_ID"'
+        sh 'echo "Client Secret: $AZURE_CLIENT_SECRET"'
+        sh 'echo "Tenant ID: $AZURE_TENANT_ID"'
+    }
+}
     stages {
         stage('Checkout') {
             steps {
