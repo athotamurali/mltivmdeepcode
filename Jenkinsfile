@@ -11,7 +11,7 @@ pipeline {
             steps {
                 // Checkout the repository using GitHub credentials
                 script {
-                    def repoUrl = "https://${GITHUB_CREDENTIALS_USR}:${GITHUB_CREDENTIALS_PSW}@github.com/your-username/your-repo.git"
+                    def repoUrl = "https://${GITHUB_CREDENTIALS_USR}:${GITHUB_CREDENTIALS_PSW}@github.com/athotamurali/mltivmdeepcode.git"
                     git branch: 'main', url: repoUrl
                 }
             }
