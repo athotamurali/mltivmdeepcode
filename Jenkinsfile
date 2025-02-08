@@ -57,3 +57,5 @@ pipeline {
         failure {
             echo 'Terraform deployment failed!'
         }
+    } // Close the post block
+} // Close the pipeline block
